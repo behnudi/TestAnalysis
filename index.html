@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nikparvar Highschool</title>
+<link rel="stylesheet" type="text/css" href="assets/bootstrap.min.css">
+<script src="assets/Chart.min.js"></script>
+</head>
+<body >
+<div class="container">
+<div class="row">
+	<img src="assets/Test_Analysis_banner.jpg" alt="Test Analysis" 
+style="width:100%;">
+</div>
+<div class="row" id="input-form">
+	<form name="myForm" class="col-sm-offset-4 col-sm-4 panel panel-default">
+		<strong>Columns: </strong>
+	  <div class="form-group">
+	    <label>From: </label>
+	    <input type="number" name="fcol" class="form-control">
+	  </div>
+	  <div class="form-group">
+	    <label>To: </label>
+	    <input type="number" name="lcol" class="form-control">
+	  </div>
+ 	  <div class="form-group">
+	 	  <label class="btn btn-primary">Browse&hellip; 
+	 	  	<input type="file" id="FileInput" class="file" onchange="handleFiles(this.files)" accept=".txt" style="display: none;">
+	    </label>
+	  </div>
+	</form>
+</div>
+<div class="row" id="results" style="display: none;">
+	<div class="col-sm-4">
+		<div class="panel panel-default">
+			<div id="DataTable"></div>
+	  </div>
+	</div>
+	<div class="col-sm-8 panel panel-default">
+		<div class="row">	
+			<canvas id="DataChart"></canvas>
+		</div>			
+		<div class="row">
+		 	<div class="col-sm-offset-4 col-sm-4">
+			<div class="input-group">
+				<span class="input-group-btn">
+					<button type="button" class="btn btn-danger" onclick="changeNum('dec')">-</button>
+				</span>
+				<input type="text" id="test-no" class="form-control" value="1" style="text-align: center;" onchange="changeNum(this.value)">
+				<span class="input-group-btn">
+					<button type="button" class="btn btn-success" onclick="changeNum('inc')">+</button>
+				</span>
+			</div>
+		</div>
+</div>
+	</div>
+</div>
+<footer class="row" style="border-top: 1px solid #DDD; text-align: center;">
+  <p>&copy; Nikparvar Highschool</p>
+</footer>
+</div>
+<script>
+function handleFiles(files) {
+	if (window.FileReader) {
+		getAsText(files[0]);
+	} else {
+		alert('FileReader are not supported in this browser.');
+	}
+}
+function getAsText(fileToRead) {
+	var reader = new FileReader();
+	reader.onload = loadHandler;
+	reader.onerror = errorHandler;
+	reader.readAsText(fileToRead);
+}
+function loadHandler(event) {
+	var csv = event.target.result;
+	processData(csv);             
+}
+function processData(csv) {
+    var allTextLines = csv.split(/\r\n|\n/);
+    var lines = [];
+    while (allTextLines.length) {
+        lines.push(allTextLines.shift().split(''));
+    }
+	console.log(lines);
+	drawOutput(lines);
+}
+function errorHandler(evt) {
+	if(evt.target.error.name == "NotReadableError") {
+		alert("Canno't read file!");
+	}
+}
+
+var ans = [[0,0,0,0,0,0]];
+var qn;
+function drawOutput(lines){
+	var fc = parseInt(document.forms["myForm"]["fcol"].value) - 1;
+	var lc = parseInt(document.forms["myForm"]["lcol"].value) - 1;
+	var nc = lc - fc + 1;
+	for (var i = 0; i < nc - 1; i++) {
+		ans.push([0,0,0,0,0,0]);        
+	}
+	for (var i = 0; i < lines.length - 1; i++) {
+		for (var j = 0; j < nc ; j++) {
+			var so = lines[i][j + fc];
+			if (so > 5) {
+				ans[j][5]++;
+			} else {
+				ans[j][so]++;
+			}
+		}
+	}
+    qn = ans.length;
+    document.getElementById("input-form").style.display = "none";
+    document.getElementById("results").style.display = "inline";
+	createmyTable(ans, document.getElementById("DataTable"));
+	document.getElementById("test-no").value = 1;
+	createmyChart(0);
+}
+
+function createmyTable(DataArray, output){
+	var ncol = DataArray[0].length;
+	var nrow = DataArray.length;
+	var table = document.createElement("table");
+	table.setAttribute("class", "table table-condensed table-hover");
+	output.appendChild(table);
+	var thead = document.createElement("thead");
+	table.appendChild(thead);
+	var tr = document.createElement("tr");
+	thead.appendChild(tr);
+	var th = document.createElement("th");
+	tr.appendChild(th);
+	var cell = document.createTextNode("#");
+	th.appendChild(cell);
+	for (var i = 0; i < ncol; i++) {
+		var th = document.createElement("th");
+		tr.appendChild(th);
+		var cell = document.createTextNode(i);
+		th.appendChild(cell);
+	}
+	var tbody = document.createElement("tbody");
+	table.appendChild(tbody);
+	for (var i = 0; i < nrow; i++) {
+		var tr = document.createElement("tr");
+		tbody.appendChild(tr);
+		var th = document.createElement("th");
+		tr.appendChild(th);
+		var cell = document.createTextNode(i + 1);
+		th.appendChild(cell);
+		for (var j = 0; j < ncol; j++) {
+			var td = document.createElement("td");
+			tr.appendChild(td);
+			var cell = document.createTextNode(DataArray[i][j]);
+			td.appendChild(cell);
+		}
+	}
+}
+
+function createmyChart(q){	
+    var	chartdata = ans[q];
+    var ctx = document.getElementById('DataChart').getContext('2d');
+
+	var myChart = new Chart(ctx, {
+        title:{
+            text: "Answer of Questions"              
+        },
+        type: 'bar',  
+        data: {
+            labels: ['0', '1', '2', '3', '4', '5'],
+            datasets: [{
+                label: 'Question ' + (parseInt(q) + 1),
+                data: chartdata,
+                backgroundColor: "rgba(0,0,255,0.6)"
+            }]
+        },
+        options: {
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero:true
+                    }
+                }]
+            }
+        }
+    });	
+}
+
+function changeNum(i){
+	var value = parseInt(document.getElementById("test-no").value);
+	switch (i) {
+		case "dec":
+        --value;
+        break; 
+    case "inc":
+        ++value;
+        break; 
+    default: 
+        if (isNaN(value)) {value = 1;}
+}
+	if (value < 1) {
+		value = 1;
+	}
+	else if (value > qn) {
+		value = qn;
+	}
+	document.getElementById("test-no").value = value;
+    createmyChart(value-1);	
+}
+</script>
+<!--<script src="assets/jquery.min.js"></script>
+<script src="assets/bootstrap.min.js"></script>-->
+</body>
+</html>
